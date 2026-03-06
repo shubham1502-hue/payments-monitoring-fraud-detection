@@ -59,9 +59,48 @@ Synthetic Transaction Generator
      Monitoring Dashboard
 ```
 
+
 ## Architecture Diagram
 
 ![Payments Monitoring System Architecture](architecture/payments_monitoring_architecture.png)
+
+---
+
+# Data Flow
+
+The payments monitoring pipeline follows these stages:
+
+**1. Transaction Generation**
+
+A Python script generates synthetic payment transactions with realistic behavior patterns and injected anomalies.
+
+**2. Raw Transaction Dataset**
+
+The generated transactions are stored as CSV datasets representing raw payment activity.
+
+**3. Database Layer**
+
+The transaction dataset is loaded into a MySQL database where it can be queried and analyzed using SQL.
+
+**4. Analytics Pipeline**
+
+A Python analytics pipeline processes the transaction data to compute metrics and detect anomalies.
+
+**5. Anomaly Detection**
+
+The system identifies operational and fraud-related signals such as:
+- transaction volume spikes
+- abnormal payment amounts
+- geo velocity anomalies
+- payment failure rate surges
+
+**6. Risk Scoring**
+
+Customer risk scores are calculated by aggregating detected anomaly signals.
+
+**7. Monitoring Dashboard**
+
+Aggregated reporting datasets are visualized in a Tableau dashboard that provides operational visibility into transaction activity and fraud indicators.
 
 ---
 
@@ -157,6 +196,28 @@ Operational insights displayed:
 ```
 pip install -r requirements.txt
 ```
+
+## Configure Database Environment
+
+The project uses environment variables for database configuration.
+
+Create a `.env` file based on the provided `.env.example` file:
+
+```
+cp .env.example .env
+```
+
+Example `.env.example` configuration:
+
+```
+DB_HOST=localhost
+DB_PORT=3306
+DB_NAME=payments_monitoring
+DB_USER=root
+DB_PASSWORD=your_password
+```
+
+Update these values with your local MySQL credentials before running the pipeline.
 
 ---
 
