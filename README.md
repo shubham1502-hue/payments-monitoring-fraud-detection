@@ -8,6 +8,28 @@ The system generates synthetic payment transactions, processes them through an a
 
 ---
 
+## Quick Start
+
+Clone the repository:
+
+git clone https://github.com/shubham1502-hue/payments-monitoring-fraud-detection.git
+
+cd payments-monitoring-project
+
+Install dependencies:
+
+pip install -r requirements.txt
+
+Generate synthetic transaction data:
+
+python data_generator/generate-payments-data.py
+
+Run the analytics pipeline:
+
+python analytics_pipeline/generate_reporting_data.py
+
+---
+
 # Project Overview
 
 Financial institutions process millions of transactions daily. Monitoring these transactions is critical for detecting system failures, abnormal activity, and potential fraud.
