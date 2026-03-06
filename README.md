@@ -379,7 +379,7 @@ Possible extensions to this project:
 # Author
 
 Shubham Singh  
-Process Analyst | Data Analytics  
+Process Analyst/Business Analyst | Data/Business Analytics  
 
 Focus areas:
 
