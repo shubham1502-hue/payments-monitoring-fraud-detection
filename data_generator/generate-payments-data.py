@@ -2,8 +2,12 @@ import pandas as pd
 import numpy as np
 from faker import Faker
 import random
+from pathlib import Path
 
 fake = Faker()
+np.random.seed(42)
+random.seed(42)
+Faker.seed(42)
 
 num_transactions = 10000
 
@@ -157,6 +161,16 @@ geo_transactions["transaction_id"] = [
 
 df = pd.concat([df, geo_transactions], ignore_index=True)
 
-df.to_csv("payments_transactions.csv", index=False)
+root = Path(__file__).resolve().parents[1]
+datasets_dir = root / "datasets"
+sample_dir = root / "sample_data"
+datasets_dir.mkdir(parents=True, exist_ok=True)
+sample_dir.mkdir(parents=True, exist_ok=True)
 
-print("Dataset generated successfully.")
+df.to_csv(datasets_dir / "payments_transactions.csv", index=False)
+df.sample(n=min(500, len(df)), random_state=42).to_csv(
+    sample_dir / "payments_transactions_sample.csv",
+    index=False,
+)
+
+print("Dataset generated: datasets/payments_transactions.csv")

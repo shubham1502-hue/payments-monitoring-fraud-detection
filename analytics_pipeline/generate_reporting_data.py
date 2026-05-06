@@ -1,265 +1,139 @@
+from __future__ import annotations
+
+from pathlib import Path
+
 import pandas as pd
-import mysql.connector
 
-# -----------------------------
-# CONNECT TO DATABASE
-# -----------------------------
 
-connection = mysql.connector.connect(
-    host="localhost",
-    user="root",
-    password="password",
-    database="payments_monitoring"
-)
+ROOT = Path(__file__).resolve().parents[1]
+DATASETS_DIR = ROOT / "datasets"
+RAW_TRANSACTIONS = DATASETS_DIR / "payments_transactions.csv"
+SAMPLE_TRANSACTIONS = ROOT / "sample_data" / "payments_transactions_sample.csv"
 
-# -----------------------------
-# DAILY TRANSACTIONS
-# -----------------------------
 
-query_daily = """
-SELECT
-DATE(transaction_time) AS day,
-COUNT(*) AS total_transactions,
-SUM(CASE WHEN status='Success' THEN 1 ELSE 0 END) AS successful_transactions,
-SUM(CASE WHEN status='Failed' THEN 1 ELSE 0 END) AS failed_transactions
-FROM payments
-GROUP BY DATE(transaction_time)
-ORDER BY day
-"""
+def load_transactions() -> pd.DataFrame:
+    path = RAW_TRANSACTIONS if RAW_TRANSACTIONS.exists() else SAMPLE_TRANSACTIONS
+    df = pd.read_csv(path)
+    df["transaction_time"] = pd.to_datetime(df["transaction_time"])
+    return df
 
-df_daily = pd.read_sql(query_daily, connection)
 
-df_daily.to_csv("daily_transactions.csv", index=False)
+def export(df: pd.DataFrame, filename: str) -> None:
+    DATASETS_DIR.mkdir(parents=True, exist_ok=True)
+    df.to_csv(DATASETS_DIR / filename, index=False)
 
-# -----------------------------
-# TRANSACTION VOLUME ANOMALY
-# -----------------------------
 
-mean_volume = df_daily["total_transactions"].mean()
-std_volume = df_daily["total_transactions"].std()
+def build_reports(df: pd.DataFrame) -> None:
+    df = df.copy()
+    df["day"] = df["transaction_time"].dt.date
+    df["is_success"] = df["status"].eq("Success")
+    df["is_failed"] = df["status"].eq("Failed")
 
-threshold_volume = mean_volume + (2 * std_volume)
+    daily = (
+        df.groupby("day")
+        .agg(
+            total_transactions=("transaction_id", "count"),
+            successful_transactions=("is_success", "sum"),
+            failed_transactions=("is_failed", "sum"),
+        )
+        .reset_index()
+    )
+    export(daily, "daily_transactions.csv")
 
-df_daily["volume_anomaly"] = df_daily["total_transactions"] > threshold_volume
+    mean_volume = daily["total_transactions"].mean()
+    std_volume = daily["total_transactions"].std()
+    daily["volume_anomaly"] = daily["total_transactions"] > mean_volume + (2 * std_volume)
+    export(daily, "transaction_volume_anomalies.csv")
 
-df_daily.to_csv("transaction_volume_anomalies.csv", index=False)
+    amount_threshold = df["amount"].mean() + (3 * df["amount"].std())
+    payment_amount_anomalies = df[df["amount"] > amount_threshold][
+        ["transaction_id", "customer_id", "payment_type", "amount", "country", "transaction_time"]
+    ]
+    export(payment_amount_anomalies, "payment_amount_anomalies.csv")
 
-# -----------------------------
-# PAYMENT AMOUNT ANOMALY
-# -----------------------------
+    failure = (
+        df.groupby("day")
+        .agg(failed=("is_failed", "sum"), total=("transaction_id", "count"))
+        .reset_index()
+    )
+    failure["failure_rate"] = failure["failed"] / failure["total"]
+    failure_threshold = failure["failure_rate"].mean() + (2 * failure["failure_rate"].std())
+    failure["failure_anomaly"] = failure["failure_rate"] > failure_threshold
+    export(failure, "failure_rate_anomalies.csv")
 
-query_payments = """
-SELECT
-transaction_id,
-payment_type,
-amount,
-country,
-transaction_time
-FROM payments
-"""
+    payment_type_distribution = (
+        df.groupby("payment_type")
+        .size()
+        .reset_index(name="transactions")
+        .sort_values("transactions", ascending=False)
+    )
+    export(payment_type_distribution, "payment_type_distribution.csv")
 
-df_payments = pd.read_sql(query_payments, connection)
+    failure_reasons = (
+        df[df["status"].eq("Failed")]
+        .groupby("failure_reason")
+        .size()
+        .reset_index(name="failure_count")
+        .sort_values("failure_count", ascending=False)
+    )
+    export(failure_reasons, "failure_reasons.csv")
 
-mean_amount = df_payments["amount"].mean()
-std_amount = df_payments["amount"].std()
+    country_distribution = (
+        df.groupby("country")
+        .size()
+        .reset_index(name="transactions")
+        .sort_values("transactions", ascending=False)
+    )
+    export(country_distribution, "transactions_by_country.csv")
 
-threshold_amount = mean_amount + (3 * std_amount)
+    high_value = df[df["amount"] > 10000][
+        ["transaction_id", "customer_id", "payment_type", "amount", "country", "transaction_time"]
+    ]
+    export(high_value, "high_value_transactions.csv")
 
-df_payments["amount_anomaly"] = df_payments["amount"] > threshold_amount
+    ordered = df.sort_values(["customer_id", "transaction_time"]).copy()
+    ordered["previous_country"] = ordered.groupby("customer_id")["country"].shift(1)
+    ordered["previous_time"] = ordered.groupby("customer_id")["transaction_time"].shift(1)
+    ordered["minutes_since_last"] = (
+        ordered["transaction_time"] - ordered["previous_time"]
+    ).dt.total_seconds() / 60
+    geo_velocity = ordered[
+        ordered["previous_country"].notna()
+        & ordered["country"].ne(ordered["previous_country"])
+        & ordered["minutes_since_last"].le(5)
+    ][["customer_id", "transaction_time", "country", "previous_country", "minutes_since_last"]]
+    export(geo_velocity, "geo_velocity_anomalies.csv")
 
-df_payments[df_payments["amount_anomaly"]].to_csv(
-    "payment_amount_anomalies.csv", index=False
-)
+    risk_frames = []
+    high_amount_customers = df[df["amount"] > 20000][["customer_id"]].drop_duplicates()
+    high_amount_customers["risk_points"] = 40
+    risk_frames.append(high_amount_customers)
 
-# -----------------------------
-# FAILURE RATE ANOMALY
-# -----------------------------
+    geo_customers = geo_velocity[["customer_id"]].drop_duplicates()
+    geo_customers["risk_points"] = 50
+    risk_frames.append(geo_customers)
 
-query_failure = """
-SELECT
-DATE(transaction_time) AS day,
-SUM(CASE WHEN status='Failed' THEN 1 ELSE 0 END) AS failed,
-COUNT(*) AS total
-FROM payments
-GROUP BY DATE(transaction_time)
-"""
+    burst_customers = (
+        df.groupby(["customer_id", "day"])
+        .size()
+        .reset_index(name="transactions")
+        .query("transactions >= 20")[["customer_id"]]
+        .drop_duplicates()
+    )
+    burst_customers["risk_points"] = 30
+    risk_frames.append(burst_customers)
 
-df_failure = pd.read_sql(query_failure, connection)
+    risk_scores = (
+        pd.concat(risk_frames, ignore_index=True)
+        .groupby("customer_id")["risk_points"]
+        .sum()
+        .reset_index()
+        .sort_values("risk_points", ascending=False)
+    )
+    export(risk_scores, "customer_risk_scores.csv")
 
-df_failure["failure_rate"] = df_failure["failed"] / df_failure["total"]
 
-mean_failure = df_failure["failure_rate"].mean()
-std_failure = df_failure["failure_rate"].std()
-
-threshold_failure = mean_failure + (2 * std_failure)
-
-df_failure["failure_anomaly"] = df_failure["failure_rate"] > threshold_failure
-
-df_failure.to_csv("failure_rate_anomalies.csv", index=False)
-
-# -----------------------------
-# PAYMENT TYPE DISTRIBUTION
-# -----------------------------
-
-query_types = """
-SELECT
-payment_type,
-COUNT(*) AS transactions
-FROM payments
-GROUP BY payment_type
-"""
-
-df_types = pd.read_sql(query_types, connection)
-
-df_types.to_csv("payment_type_distribution.csv", index=False)
-
-# -----------------------------
-# FAILURE REASONS
-# -----------------------------
-
-query_failures = """
-SELECT
-failure_reason,
-COUNT(*) AS failure_count
-FROM payments
-WHERE status='Failed'
-GROUP BY failure_reason
-"""
-
-df_failures = pd.read_sql(query_failures, connection)
-
-df_failures.to_csv("failure_reasons.csv", index=False)
-
-# -----------------------------
-# COUNTRY DISTRIBUTION
-# -----------------------------
-
-query_country = """
-SELECT
-country,
-COUNT(*) AS transactions
-FROM payments
-GROUP BY country
-"""
-
-df_country = pd.read_sql(query_country, connection)
-
-df_country.to_csv("transactions_by_country.csv", index=False)
-
-# -----------------------------
-# HIGH VALUE TRANSACTIONS
-# -----------------------------
-
-query_high_value = """
-SELECT
-transaction_id,
-payment_type,
-amount,
-country,
-transaction_time
-FROM payments
-WHERE amount > 10000
-"""
-
-df_high = pd.read_sql(query_high_value, connection)
-
-df_high.to_csv("high_value_transactions.csv", index=False)
-
-# -----------------------------
-# GEO-VELOCITY ANOMALY
-# -----------------------------
-
-query_geo_velocity = """
-SELECT *
-FROM (
-    SELECT
-        customer_id,
-        transaction_time,
-        country,
-        LAG(country) OVER (
-            PARTITION BY customer_id
-            ORDER BY transaction_time
-        ) AS previous_country,
-        TIMESTAMPDIFF(
-            MINUTE,
-            LAG(transaction_time) OVER (
-                PARTITION BY customer_id
-                ORDER BY transaction_time
-            ),
-            transaction_time
-        ) AS minutes_since_last
-    FROM payments
-) t
-WHERE previous_country IS NOT NULL
-AND country <> previous_country
-AND minutes_since_last <= 5
-"""
-
-df_geo_velocity = pd.read_sql(query_geo_velocity, connection)
-
-df_geo_velocity.to_csv("geo_velocity_anomalies.csv", index=False)
-
-# -----------------------------
-# CUSTOMER RISK SCORE
-# -----------------------------
-
-# High amount anomaly customers (+40 points)
-query_high_amount_risk = """
-SELECT DISTINCT customer_id, 40 AS risk_points
-FROM payments
-WHERE amount > 20000
-"""
-df_risk_high = pd.read_sql(query_high_amount_risk, connection)
-
-# Geo velocity anomaly customers (+50 points)
-query_geo_risk = """
-SELECT DISTINCT customer_id, 50 AS risk_points
-FROM (
-    SELECT
-        customer_id,
-        transaction_time,
-        country,
-        LAG(country) OVER (
-            PARTITION BY customer_id
-            ORDER BY transaction_time
-        ) AS previous_country,
-        TIMESTAMPDIFF(
-            MINUTE,
-            LAG(transaction_time) OVER (
-                PARTITION BY customer_id
-                ORDER BY transaction_time
-            ),
-            transaction_time
-        ) AS minutes_since_last
-    FROM payments
-) t
-WHERE previous_country IS NOT NULL
-AND country <> previous_country
-AND minutes_since_last <= 5
-"""
-df_risk_geo = pd.read_sql(query_geo_risk, connection)
-
-# Burst transaction anomaly customers (+30 points)
-query_burst_risk = """
-SELECT customer_id, 30 AS risk_points
-FROM payments
-GROUP BY customer_id, DATE(transaction_time)
-HAVING COUNT(*) >= 20
-"""
-df_risk_burst = pd.read_sql(query_burst_risk, connection)
-
-# Combine all risk signals
-df_risk_all = pd.concat([df_risk_high, df_risk_geo, df_risk_burst])
-
-# Aggregate total risk score per customer
-df_risk_scores = (
-    df_risk_all.groupby("customer_id")
-    .sum()
-    .reset_index()
-    .sort_values("risk_points", ascending=False)
-)
-
-# Export dataset
-df_risk_scores.to_csv("customer_risk_scores.csv", index=False)
-
-print("Reporting datasets + anomaly detection generated successfully.")
+if __name__ == "__main__":
+    transactions = load_transactions()
+    build_reports(transactions)
+    print("Reporting datasets and anomaly signals generated in datasets/.")

@@ -1,146 +1,76 @@
 # Payments Monitoring & Fraud Detection System
 
-A **data analytics project simulating a financial payments monitoring system** used to detect operational anomalies and fraud signals in transaction networks.
+## Problem This Solves
 
-This project demonstrates how modern financial systems monitor transaction flows, detect suspicious patterns, and provide operational visibility through data pipelines and analytics dashboards.
+Payments teams need to know when transaction volume, payment failures, high-value transfers, geo-velocity behavior, or customer risk patterns move outside normal bounds. The problem is building an explainable monitoring layer before fraud and reliability issues become customer or compliance escalations.
 
-The system generates synthetic payment transactions, processes them through an analytics pipeline, and visualizes insights using a monitoring dashboard.
+## How It Helps
 
----
+- Generates synthetic payments data with injected operational and fraud-style anomalies.
+- Produces forkable reporting datasets for daily transactions, volume spikes, failure-rate anomalies, high-value transactions, geo-velocity alerts, and customer risk scores.
+- Gives founders and fintech operators a starter monitoring workflow that runs locally without requiring a database.
+
+## When To Fork This
+
+- Fork this if you are building payments, banking, wallet, PSP, merchant acquiring, risk, or fraud operations tooling.
+- Fork it when your team needs an explainable first monitoring layer before investing in streaming infrastructure or ML fraud models.
+- Replace the synthetic CSV with processor, bank, PSP, or internal transaction exports, then tune thresholds and scoring rules.
+
+## What This Does
+
+This project simulates a financial payments monitoring system used to detect operational anomalies and fraud signals in transaction networks.
+
+The pipeline covers:
+
+- synthetic transaction generation
+- transaction volume anomaly detection
+- high-value payment anomaly detection
+- failure-rate spike detection
+- geo-velocity anomaly detection
+- customer risk scoring
+- Tableau-ready reporting datasets
 
 ## Quick Start
 
-Clone the repository:
-
+```bash
 git clone https://github.com/shubham1502-hue/payments-monitoring-fraud-detection.git
+cd payments-monitoring-fraud-detection
 
-cd payments-monitoring-project
+python3 -m pip install -r requirements.txt
 
-Install dependencies:
-
-pip install -r requirements.txt
-
-Generate synthetic transaction data:
-
-python data_generator/generate-payments-data.py
-
-Run the analytics pipeline:
-
-python analytics_pipeline/generate_reporting_data.py
-
----
-
-# Project Overview
-
-Financial institutions process millions of transactions daily. Monitoring these transactions is critical for detecting system failures, abnormal activity, and potential fraud.
-
-This project simulates a real-world payments monitoring architecture used by financial institutions to:
-
-- Monitor transaction volume and system health
-- Detect unusual payment amounts
-- Track failure rates in payment processing
-- Detect geo-velocity fraud patterns
-- Compute customer risk scores
-
-The system integrates **data generation, SQL analytics, anomaly detection, and dashboard visualization** into a single analytics pipeline.
-
----
-
-# Business Context
-
-Financial institutions operate complex payment networks that must be continuously monitored for operational failures, fraud signals, and unusual transaction behavior.
-
-Payments monitoring systems typically analyze transaction streams to detect anomalies such as:
-
-- sudden spikes in transaction traffic
-- abnormal transaction amounts
-- system failure patterns
-- suspicious geographic activity
-
-This project simulates a simplified payments monitoring environment similar to those used in banks and payment networks to identify operational risks and fraud signals.
-
----
-
-# System Architecture
-
-The project is structured as a simplified but realistic **payments monitoring data pipeline**.
-
+python3 data_generator/generate-payments-data.py
+python3 analytics_pipeline/generate_reporting_data.py
 ```
+
+Outputs are written to `datasets/`.
+
+## System Flow
+
+```text
 Synthetic Transaction Generator
             ↓
-      Transaction Dataset (CSV)
+Transaction Dataset (CSV)
             ↓
-        MySQL Database
+Python Analytics Pipeline
             ↓
-     Python Analytics Pipeline
+Anomaly Detection
             ↓
-      Anomaly Detection
+Risk Scoring
             ↓
-       Risk Scoring Engine
-            ↓
-     Monitoring Dashboard
+Monitoring Dashboard Inputs
 ```
 
+## Project Structure
 
-## Architecture Diagram
-
-![Payments Monitoring System Architecture](architecture/payments_monitoring_architecture.png)
-
----
-
-# Data Flow
-
-The payments monitoring pipeline follows these stages:
-
-**1. Transaction Generation**
-
-A Python script generates synthetic payment transactions with realistic behavior patterns and injected anomalies.
-
-**2. Raw Transaction Dataset**
-
-The generated transactions are stored as CSV datasets representing raw payment activity.
-
-**3. Database Layer**
-
-The transaction dataset is loaded into a MySQL database where it can be queried and analyzed using SQL.
-
-**4. Analytics Pipeline**
-
-A Python analytics pipeline processes the transaction data to compute metrics and detect anomalies.
-
-**5. Anomaly Detection**
-
-The system identifies operational and fraud-related signals such as:
-- transaction volume spikes
-- abnormal payment amounts
-- geo velocity anomalies
-- payment failure rate surges
-
-**6. Risk Scoring**
-
-Customer risk scores are calculated by aggregating detected anomaly signals.
-
-**7. Monitoring Dashboard**
-
-Aggregated reporting datasets are visualized in a Tableau dashboard that provides operational visibility into transaction activity and fraud indicators.
-
----
-
-# Project Structure
-
-```
-payments-monitoring-project
-│
-├── architecture
+```text
+payments-monitoring-fraud-detection/
+├── architecture/
 │   └── payments_monitoring_architecture.png
-│
-├── data_generator
+├── data_generator/
 │   └── generate-payments-data.py
-│
-├── analytics_pipeline
+├── analytics_pipeline/
 │   └── generate_reporting_data.py
-│
-├── datasets
+├── datasets/
 │   ├── customer_risk_scores.csv
 │   ├── daily_transactions.csv
 │   ├── failure_rate_anomalies.csv
@@ -151,261 +81,45 @@ payments-monitoring-project
 │   ├── payment_type_distribution.csv
 │   ├── transaction_volume_anomalies.csv
 │   └── transactions_by_country.csv
-│
-├── dashboard
+├── dashboard/
 │   └── payments_monitoring_dashboard.png
-│
-├── sample_data
+├── sample_data/
 │   └── payments_transactions_sample.csv
-│
 ├── requirements.txt
 └── README.md
 ```
 
----
-
-# Payments Table Schema
-
-The core transaction dataset used in the monitoring pipeline follows the schema below:
+## Payments Dataset Schema
 
 | Column | Description |
-|------|-------------|
+|---|---|
 | transaction_id | Unique transaction identifier |
 | customer_id | Customer identifier |
-| payment_method | Payment method (Card / ACH / Wire) |
+| payment_type | Payment method: Card, ACH, or Wire |
 | amount | Transaction amount |
-| country | Transaction origin country |
+| currency | Transaction currency |
 | transaction_time | Timestamp of transaction |
-| status | Transaction status (Success / Failure) |
+| processing_time_seconds | Simulated processing time |
+| status | Success or Failed |
+| failure_reason | Failure reason for failed transactions |
+| country | Transaction origin country |
 
-This schema represents the base structure of the payments dataset used throughout the monitoring pipeline for anomaly detection, aggregation analysis, and risk scoring.
-
----
-
-# Monitoring Dashboard
-
-The analytics outputs are visualized through a payments monitoring dashboard.
-
-The dashboard provides operational visibility into system activity and fraud signals.
-
-Key dashboard metrics include:
-
-- total transactions processed  
-- volume anomalies detected  
-- geo-velocity alerts  
-- high-risk customers  
-
-Operational insights displayed:
-
-- daily transaction trends  
-- success vs failure analysis  
-- payment amount anomaly detection  
-- geo velocity monitoring  
-- customer risk scoring  
-
----
-
-# Dashboard Preview
+## Dashboard Preview
 
 ![Payments Monitoring Dashboard](dashboard/payments_monitoring_dashboard.png)
 
----
-
-# How to Run the Project
-
-## 1. Install Dependencies
-
-```
-pip install -r requirements.txt
-```
-
-## Configure Database Environment
-
-The project uses environment variables for database configuration.
-
-Create a `.env` file based on the provided `.env.example` file:
-
-```
-cp .env.example .env
-```
-
-Example `.env.example` configuration:
-
-```
-DB_HOST=localhost
-DB_PORT=3306
-DB_NAME=payments_monitoring
-DB_USER=root
-DB_PASSWORD=your_password
-```
-
-Update these values with your local MySQL credentials before running the pipeline.
-
----
-
-## 2. Generate Synthetic Payment Data
-
-```
-python data_generator/generate-payments-data.py
-```
-
-This script generates synthetic payment transactions and injects realistic anomalies.
-
----
-
-## 3. Load Data into MySQL
-
-Create a database:
-
-```
-CREATE DATABASE payments_monitoring;
-```
-
-Load the generated dataset into the database.
-
----
-
-## 4. Run the Analytics Pipeline
-
-```
-python analytics_pipeline/generate_reporting_data.py
-```
-
-This script performs:
-
-- anomaly detection  
-- risk scoring  
-- reporting dataset generation  
-
----
-
-# Example Output
+## Example Output
 
 Example customer risk scores generated by the analytics pipeline:
 
 | Customer ID | Risk Score |
-|-------------|-----------|
+|---|---:|
 | C5364 | 80 |
 | C9306 | 50 |
 | C8829 | 30 |
 
 Higher scores indicate customers triggering multiple fraud signals.
 
----
+## Why This Matters
 
-## Sample Generated Insights
-
-Example insights detected by the monitoring system:
-
-| Metric | Observation |
-|------|-------------|
-| Transaction Spike | Abnormal transaction volume detected on a specific day |
-| Failure Rate Spike | Temporary spike in payment failures detected |
-| Geo Velocity Alerts | Customers appearing across multiple countries within minutes |
-| High Risk Customers | Accounts flagged by aggregated anomaly signals |
-
-These signals simulate how monitoring systems surface operational and fraud anomalies in payment networks.
-
----
-
-# Example Analytical Queries
-
-Detect transaction spikes:
-
-```sql
-SELECT
-DATE(transaction_time) AS day,
-COUNT(*) AS total_transactions
-FROM payments
-GROUP BY DATE(transaction_time)
-ORDER BY total_transactions DESC;
-```
-
-Detect high value transactions:
-
-```sql
-SELECT
-transaction_id,
-amount
-FROM payments
-WHERE amount > 20000;
-```
-
-Detect geo velocity anomalies:
-
-```sql
-SELECT
-customer_id,
-country,
-LAG(country) OVER (
-PARTITION BY customer_id
-ORDER BY transaction_time
-)
-FROM payments;
-```
-
----
-
-# Why This Project Matters
-
-Financial institutions require robust monitoring systems to detect abnormal activity and ensure transaction reliability.
-
-This project demonstrates core capabilities used in financial data analytics roles:
-
-- data pipeline design  
-- anomaly detection  
-- transaction monitoring  
-- fraud signal identification  
-- analytics dashboard development  
-
-These capabilities are relevant for roles in banking, fintech, and payment infrastructure analytics.
-
----
-
----
-
-## Reproducibility
-
-To reproduce the full monitoring pipeline:
-
-1. Generate synthetic transactions
-
-```
-python data_generator/generate-payments-data.py
-```
-
-2. Load the generated dataset into MySQL.
-
-3. Run the analytics pipeline
-
-```
-python analytics_pipeline/generate_reporting_data.py
-```
-
-4. Open the Tableau dashboard and connect it to the generated datasets.
-
-The dashboard will automatically visualize anomaly signals, transaction patterns, and customer risk scores.
-
-# Potential Future Improvements
-
-Possible extensions to this project:
-
-- real time transaction monitoring with streaming pipelines  
-- machine learning based fraud detection  
-- automated alerting systems  
-- network analysis for fraud rings  
-- deployment using cloud infrastructure  
-
----
-
-# Author
-
-Shubham Singh  
-Process Analyst/Business Analyst | Data/Business Analytics  
-
-Focus areas:
-
-- financial analytics  
-- payments monitoring  
-- anomaly detection  
-- fraud analytics  
+Financial institutions require robust monitoring systems to detect abnormal activity and ensure transaction reliability. This repo gives founders and operators a practical starting point for payments monitoring before moving into real-time streams, alerting systems, or machine-learning fraud models.
