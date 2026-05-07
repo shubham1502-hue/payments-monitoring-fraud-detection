@@ -26,12 +26,16 @@ This repo is designed to be forked into an internal company workflow. Fork it, r
 
 ## Minimum Edits To Make It Yours
 
-- datasets/payments_transactions.csv
-- failure/anomaly thresholds
-- risk scoring weights
-- dashboard connection
+Change these first:
 
-The fastest path is: fork the repo, replace the inputs above, run the demo or open the template, then adjust only the parts that reflect your company's workflow.
+| Edit | Where | Why |
+|---|---|---|
+| Replace transaction sample data. | `sample_data/payments_transactions_sample.csv` or `datasets/*.csv` | Makes fraud, failure, and anomaly outputs reflect your payment flow. |
+| Tune risk scoring weights. | `analytics_pipeline/generate_reporting_data.py` | Changes which customers, geographies, or transaction types are escalated. |
+| Update anomaly thresholds. | `analytics_pipeline/generate_reporting_data.py` | Fits alerts to your real transaction volume and risk tolerance. |
+| Refresh dashboard and architecture references. | `dashboard/` and `architecture/` | Keeps the repo useful for risk, ops, and engineering conversations. |
+
+You can leave the generated reporting dataset structure, dashboard framing, and monitoring architecture alone on the first fork. Map your transaction fields before changing risk logic.
 
 ## What This Does
 
