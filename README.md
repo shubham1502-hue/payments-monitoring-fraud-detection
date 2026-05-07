@@ -18,6 +18,8 @@ Payments teams need to know when transaction volume, payment failures, high-valu
 
 ## Use This In Your Company
 
+This repo is designed to be forked into an internal company workflow. Fork it, replace the sample inputs with your company context, and keep only the parts that match your operating cadence. No permission request or sales call is needed before using it; the repo is the handoff. Check the license if you plan to redistribute your version.
+
 - Use it as a first monitoring layer for payments, PSP, wallet, banking, or merchant risk workflows.
 - Keep the signal set: volume anomalies, failure spikes, high-value transactions, geo-velocity, and customer risk scores.
 - Replace synthetic transactions with a sanitized CSV export before tuning thresholds.
