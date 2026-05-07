@@ -16,6 +16,21 @@ Payments teams need to know when transaction volume, payment failures, high-valu
 - Fork it when your team needs an explainable first monitoring layer before investing in streaming infrastructure or ML fraud models.
 - Replace the synthetic CSV with processor, bank, PSP, or internal transaction exports, then tune thresholds and scoring rules.
 
+## Use This In Your Company
+
+- Use it as a first monitoring layer for payments, PSP, wallet, banking, or merchant risk workflows.
+- Keep the signal set: volume anomalies, failure spikes, high-value transactions, geo-velocity, and customer risk scores.
+- Replace synthetic transactions with a sanitized CSV export before tuning thresholds.
+
+## Minimum Edits To Make It Yours
+
+- datasets/payments_transactions.csv
+- failure/anomaly thresholds
+- risk scoring weights
+- dashboard connection
+
+The fastest path is: fork the repo, replace the inputs above, run the demo or open the template, then adjust only the parts that reflect your company's workflow.
+
 ## What This Does
 
 This project simulates a financial payments monitoring system used to detect operational anomalies and fraud signals in transaction networks.
