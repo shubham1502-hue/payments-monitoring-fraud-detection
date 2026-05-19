@@ -4,6 +4,10 @@ Synthetic payments monitoring workflow for volume anomalies, failure rates, high
 
 <!-- FOUNDER_OS_STANDARD_README -->
 
+## Portfolio role
+
+This is an older payments risk analytics project using synthetic data. It is useful for showing anomaly-style monitoring, risk scoring, and dashboard-ready outputs, but it should stay secondary to the stronger Founder OS and operator-system repos.
+
 ## The founder problem
 
 Payments teams need to know when transaction volume, payment failures, high-value transfers, geo-velocity behavior, or customer risk patterns move outside normal bounds before they become customer or compliance escalations.
